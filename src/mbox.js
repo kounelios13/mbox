@@ -59,7 +59,7 @@ var mbox = (function () {
         return obj;
     };
     var core = {
-       
+
         global: {
             options: {
                 inDuration: 250,
@@ -70,7 +70,7 @@ var mbox = (function () {
                 fixed_footer: false,
                 opacity: 0.5,
                 startingTop: '4%',
-                startingEnd:'10%'
+                startingEnd: '10%'
             }
         },
 
@@ -88,19 +88,18 @@ var mbox = (function () {
                 throw new Error("Speed value must be a number but a " + typeof (speed) + " was given");
             }
             core.global.options.inDuration = speed;
-        }, 
-        template:
-            '<div class="modal mbox-wrapper">' +
-                '<div class="modal-content">' +
-                    '<h5>$$$_message_$$$</h5>' +
-                    '$$$_input_$$$' +
-                '</div>'+
-                '<div class="modal-footer">' +
-                    '$$$_buttons_$$$'+
-                '</div>'+
+        },
+        template: '<div class="modal mbox-wrapper">' +
+            '<div class="modal-content">' +
+            '<h5>$$$_message_$$$</h5>' +
+            '$$$_input_$$$' +
+            '</div>' +
+            '<div class="modal-footer">' +
+            '$$$_buttons_$$$' +
+            '</div>' +
             '</div>',
-        
-        
+
+
         set_locale: function (locale) {
             core.global.options.locale = locale;
         },
@@ -110,19 +109,21 @@ var mbox = (function () {
             locales[locale.toLowerCase()] = translations;
         },
         addLocale: this.add_locale,
-        reset_options: function () {
+        reset_options: function () { 
+            console.log(core.global.options);
             core.process_options(core.global.options);
         },
         alert: function () {
             core.reset_options();
-
+            console.log('Alert options');
+            console.log(arguments);
             var data = core.parse_args(arguments);
 
             var message = data.message;
             var cb = data.cb;
 
             core.open('alert', message);
-            
+
             var mbox_ok_button = document.querySelector('.mbox-wrapper .mbox-ok-button');
             mbox_ok_button.addEventListener("click", function () {
                 core.close();
@@ -168,7 +169,6 @@ var mbox = (function () {
 
             //@TODO
             //Find a way to add a common handler to both OK and Cancel buttons
-
             mbox_ok_button.addEventListener('click', function () {
                 var input = document.querySelector('.mbox-wrapper input');
                 var entered_text = input.value;
@@ -200,10 +200,6 @@ var mbox = (function () {
 
             var buttons = '';
 
-            //@TODO
-            //There are 2 loops for configuration.buttons
-            //Merge them into one
-
             configuration.buttons.forEach(function (button, i) {
                 var serialized_button = 'mbox-custom-button-' + i;
 
@@ -213,14 +209,6 @@ var mbox = (function () {
                         button.label || '',
                         serialized_button
                     );
-            });
-
-            template = template.replace(/\$\$\$_message_\$\$\$/gi, configuration.message || '');
-            template = template.replace(/\$\$\$_buttons_\$\$\$/gi, buttons);
-               
-            var open_speed = core.options.open_speed;
-            configuration.buttons.forEach(function (button, i) {
-                var serialized_button = 'mbox-custom-button-' + i;
                 //Event delegation
                 document.body.addEventListener('click', function (e) {
                     //classList is a DOMTokenList
@@ -235,12 +223,14 @@ var mbox = (function () {
                         }
                     }
                 });
-
             });
+
+            template = template.replace(/\$\$\$_message_\$\$\$/gi, configuration.message || '');
+            template = template.replace(/\$\$\$_buttons_\$\$\$/gi, buttons);
             var template_element = document.createElement('div');
             template_element.id = 'mbox-template-wrapper';
             template_element.innerHTML = template;
-            var options = core.options || core.global.options;
+            var options = merge_objects(core.global.options, core.options);
             if (options.bottom_sheet) {
                 template_element.firstChild.classList.add("bottom-sheet");
             }
@@ -249,15 +239,12 @@ var mbox = (function () {
             }
             document.body.append(template_element);
             var modal_element = document.querySelector('.modal');
-            var options = core.options;
-            var modal_options = merge_objects(core.global.options, options);
-            var modal_instance = M.Modal.init(modal_element, modal_options);
+            var modal_instance = M.Modal.init(modal_element,options);
             modal_instance.open();
         },
 
         open: function (type, message) {
-            console.log('global options')
-            console.log(core.global.options)
+            core.reset_options();
             var template = core.template;
             var input = '<input type="text" />';
             var buttons;
@@ -290,14 +277,13 @@ var mbox = (function () {
 
             if (message) template = template.replace(/\$\$\$_message_\$\$\$/gi, message);
             if (buttons) template = template.replace(/\$\$\$_buttons_\$\$\$/gi, buttons);
-        
+
             var template_element = document.createElement('div');
-            
+
             template_element.innerHTML = template;
 
             template_element.id = 'mbox-template-wrapper';
-            var options = core.options || core.global.options;
-            
+            var options = merge_objects(core.global.options, core.options);
             if (options.bottom_sheet) {
                 template_element.firstChild.classList.add("bottom-sheet");
             }
@@ -307,6 +293,9 @@ var mbox = (function () {
             document.body.append(template_element);
             //Since materializecss@1.0.0 we need to manually initialize modals
             var modal_element = document.querySelector('.modal');
+            var instance = M.Modal.getInstance(modal_element);
+            console.log('Merged options');
+            console.log(options);
             //@TODO
             //Maybe rename it to passed_options or local_options
             var options = core.options;
@@ -322,20 +311,13 @@ var mbox = (function () {
         },
 
         close: function () {
-            /* core.reset_options(); */
+            core.reset_options();
             var modal_element = document.querySelector('.modal');
             //Sometimes modal_instance might be null
             //so check before closing
             var modal_instance = M.Modal.getInstance(modal_element);
             modal_instance && modal_instance.close();
-            console.log(modal_element)
             modal_element.parentElement.remove();
-            // unbind all the mbox buttons
-            //Do we have to do that?
-            var mbox_buttons = document.querySelectorAll('.mbox-button');
-            /* mbox_buttons.forEach(function (btn) {
-                btn.removeEventListener("click"); 
-            }); */
         },
 
         parse_args: function (args) {
@@ -345,7 +327,6 @@ var mbox = (function () {
                 message: null,
                 cb: null
             }
-
             args.forEach(function (arg) {
                 if (typeof arg === 'string') ret.message = arg;
                 if (typeof arg === 'function') ret.cb = arg;
@@ -360,7 +341,6 @@ var mbox = (function () {
                 core.options[key] = options[key];
             }, this);
         },
-
 
         gen_button: function (color, text, type) {
             return '&nbsp;<button ' +
@@ -380,6 +360,6 @@ var mbox = (function () {
         set_locale: core.set_locale,
         close: core.close,
         set_in_duration: core.set_in_duration,
-        set_out_duration:core.set_out_duration
+        set_out_duration: core.set_out_duration
     }
 })();
