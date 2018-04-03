@@ -45,7 +45,12 @@ var mbox = (function () {
             CANCEL: 'cancelar'
         }
     };
-    //Merge 2 objects into one
+    /**
+     * Merges 2 objects into one from left to right
+     * @param {object} a The first object 
+     * @param {object} b The second object
+     * @returns {object} obj The merged object
+     */
     var merge_objects = function (a, b) {
         var obj = {};
         var a_keys = Object.keys(a);
@@ -109,21 +114,15 @@ var mbox = (function () {
             locales[locale.toLowerCase()] = translations;
         },
         addLocale: this.add_locale,
-        reset_options: function () { 
-            console.log(core.global.options);
+        reset_options: function () {
             core.process_options(core.global.options);
         },
         alert: function () {
             core.reset_options();
-            console.log('Alert options');
-            console.log(arguments);
             var data = core.parse_args(arguments);
-
             var message = data.message;
             var cb = data.cb;
-
             core.open('alert', message);
-
             var mbox_ok_button = document.querySelector('.mbox-wrapper .mbox-ok-button');
             mbox_ok_button.addEventListener("click", function () {
                 core.close();
@@ -239,7 +238,7 @@ var mbox = (function () {
             }
             document.body.append(template_element);
             var modal_element = document.querySelector('.modal');
-            var modal_instance = M.Modal.init(modal_element,options);
+            var modal_instance = M.Modal.init(modal_element, options);
             modal_instance.open();
         },
 
@@ -300,8 +299,6 @@ var mbox = (function () {
             //Maybe rename it to passed_options or local_options
             var options = core.options;
             var modal_options = merge_objects(core.global.options, options);
-            //need to check if apart from close or open speed in/outDuration options were passed
-            console.log(modal_options)
             var modal_instance = M.Modal.init(modal_element, modal_options);
             // show the box
             modal_instance.open();
